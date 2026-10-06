@@ -16,37 +16,50 @@
             background-color: #0d0d11;
             color: #fff;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            overflow-x: hidden;
-            overflow-y: auto;
-            touch-action: none; /* Varsayılan çizim için */
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            touch-action: none;
+            user-select: none;
         }
 
-        body.scrollable {
-            touch-action: auto !important; /* Gezinme modunda kaydırmaya izin ver */
-            overflow-y: auto !important;
-        }
-
-        /* Çizim Tuvali */
-        #drawCanvas {
-            position: fixed;
+        /* Kaydırılabilir Tuval Kapsayıcısı */
+        #viewport-container {
+            position: absolute;
             top: 0;
             left: 0;
             width: 100vw;
             height: 100vh;
+            overflow: hidden;
+            cursor: default;
+        }
+
+        #world {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 3000px;
+            height: 3000px;
+            transform-origin: 0 0;
+            will-change: transform;
+            /* Tatlı Mor Aura Çerçeve (Soft Glow) */
+            box-shadow: inset 0 0 100px 30px rgba(186, 85, 211, 0.45),
+                        inset 0 0 200px 60px rgba(147, 112, 219, 0.25);
+            border: 2px solid rgba(224, 176, 255, 0.3);
+        }
+
+        /* Çizim Tuvali */
+        #drawCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 3000px;
+            height: 3000px;
             z-index: 1;
             cursor: crosshair;
-            pointer-events: auto;
         }
 
-        #drawCanvas.disabled {
-            pointer-events: none !important; /* Gezinme modunda dokunmayı tamamen alt katmana geçirir */
-        }
-
-        /* Çizim Araç Çubuğu (Toolbar) */
+        /* Çizim Araç Çubuğu (Fixed/Sabit) */
         #toolbar {
             position: fixed;
             bottom: 20px;
@@ -126,10 +139,13 @@
             z-index: 10;
             transition: all 0.8s cubic-bezier(0.25, 1, 0.5, 1);
             position: absolute;
+            left: 1500px;
+            top: 1500px;
+            transform: translate(-50%, -50%);
         }
 
         .card.shift-up {
-            top: 15px;
+            top: 1350px;
             padding: 12px 20px;
             max-width: 380px;
             border-radius: 16px;
@@ -413,9 +429,19 @@
 </head>
 <body>
 
-    <canvas id="drawCanvas"></canvas>
+    <!-- Kaydırılabilir Dünya Alanı -->
+    <div id="viewport-container">
+        <div id="world">
+            <canvas id="drawCanvas" width="3000" height="3000"></canvas>
+            <div class="card" id="mainCard">
+                <h1>Naz ッ</h1>
+                <div id="typing-text"></div>
+                <button class="btn" id="start-btn" onclick="startSurprise()">Sürprizi Aç ❤️</button>
+            </div>
+        </div>
+    </div>
 
-    <!-- Müzik Çalar Widget -->
+    <!-- Müzik Çalar Widget (Fixed) -->
     <div id="music-player">
         <button class="toggle-player-btn" id="min-btn" onclick="handleMinBtnClick()" style="display: none;">🎵</button>
         <div class="player-content">
@@ -445,7 +471,7 @@
         </div>
     </div>
 
-    <!-- Çizim Menüsü -->
+    <!-- Çizim Menüsü (Fixed) -->
     <div id="toolbar">
         <div class="color-btn active" style="background: #ffb6c1;" onclick="setColor('#ffb6c1', '#ff69b4', this)"></div>
         <div class="color-btn" style="background: #e0b0ff;" onclick="setColor('#e0b0ff', '#da70d6', this)"></div>
@@ -453,18 +479,13 @@
         <div class="color-btn" style="background: #fffaca;" onclick="setColor('#fffaca', '#ffd700', this)"></div>
         <div class="color-btn" style="background: #ffffff;" onclick="setColor('#ffffff', '#ffffff', this)"></div>
         <button class="tool-btn" id="eraserBtn" onclick="toggleEraser(this)">🧹 Silgi</button>
-        <button class="tool-btn" onclick="clearCanvas()">🗑️ Temizle</button>
+        <button class="tool-btn" onclick="clearCanvas()">🗑 Temizle</button>
+        <button class="tool-btn" id="modeBtn" onclick="toggleInteractivity()">✏️️ Çizim Modu</button>
+        <button class="tool-btn" onclick="centerView()">🎯 Merkeze Dön</button>
         <button class="tool-btn" id="fullscreenBtn" onclick="toggleFullscreen()">⛶ Tam Ekran</button>
-        <button class="tool-btn active" id="modeBtn" onclick="toggleInteractivity()">✏️ Çizim Modu</button>
     </div>
 
     <audio id="bg-music" preload="auto"></audio>
-
-    <div class="card" id="mainCard">
-        <h1>Naz ッ</h1>
-        <div id="typing-text"></div>
-        <button class="btn" id="start-btn" onclick="startSurprise()">Sürprizi Aç ❤️</button>
-    </div>
 
     <script>
         const initialMessage = "Sana özel küçük bir sürpriz hazırlamak istedim... İyi ki varsın!";
@@ -613,18 +634,18 @@
         }
 
         function handleMinBtnClick() {
-            if (!hasDragged) {
+            if (!hasDraggedPlayer) {
                 togglePlayer();
             }
         }
 
-        /* --- Sınır Korumalı Sürükleme Mantığı --- */
+        /* --- Müzik Çalar Sürükleme Mantığı --- */
         const player = document.getElementById("music-player");
         const playerHeader = document.getElementById("player-header");
         const minBtn = document.getElementById("min-btn");
-        let isDragging = false;
-        let hasDragged = false;
-        let startX, startY, initialLeft, initialTop;
+        let isDraggingPlayer = false;
+        let hasDraggedPlayer = false;
+        let startXPlayer, startYPlayer, initialLeftPlayer, initialTopPlayer;
 
         function clampPlayerPosition() {
             const rect = player.getBoundingClientRect();
@@ -644,67 +665,129 @@
             player.style.top = top + 'px';
         }
 
-        function startDrag(e) {
+        function startDragPlayer(e) {
             if (e.target.tagName === 'BUTTON' && !player.classList.contains('collapsed')) return;
 
-            isDragging = true;
-            hasDragged = false;
+            isDraggingPlayer = true;
+            hasDraggedPlayer = false;
 
             const clientX = e.clientX || (e.touches && e.touches[0].clientX);
             const clientY = e.clientY || (e.touches && e.touches[0].clientY);
 
-            startX = clientX;
-            startY = clientY;
+            startXPlayer = clientX;
+            startYPlayer = clientY;
 
             const rect = player.getBoundingClientRect();
-            initialLeft = rect.left;
-            initialTop = rect.top;
+            initialLeftPlayer = rect.left;
+            initialTopPlayer = rect.top;
 
             player.style.right = 'auto';
-            player.style.left = initialLeft + 'px';
-            player.style.top = initialTop + 'px';
+            player.style.left = initialLeftPlayer + 'px';
+            player.style.top = initialTopPlayer + 'px';
         }
 
-        function onDrag(e) {
-            if (!isDragging) return;
+        function onDragPlayer(e) {
+            if (!isDraggingPlayer) return;
 
             const clientX = e.clientX || (e.touches && e.touches[0].clientX);
             const clientY = e.clientY || (e.touches && e.touches[0].clientY);
 
-            const dx = clientX - startX;
-            const dy = clientY - startY;
+            const dx = clientX - startXPlayer;
+            const dy = clientY - startYPlayer;
 
             if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
-                hasDragged = true;
+                hasDraggedPlayer = true;
             }
 
-            let newLeft = initialLeft + dx;
-            let newTop = initialTop + dy;
-
-            player.style.left = newLeft + 'px';
-            player.style.top = newTop + 'px';
+            player.style.left = (initialLeftPlayer + dx) + 'px';
+            player.style.top = (initialTopPlayer + dy) + 'px';
         }
 
-        function stopDrag() {
-            if (isDragging) {
-                isDragging = false;
+        function stopDragPlayer() {
+            if (isDraggingPlayer) {
+                isDraggingPlayer = false;
                 clampPlayerPosition();
             }
         }
 
-        playerHeader.addEventListener("mousedown", startDrag);
-        minBtn.addEventListener("mousedown", startDrag);
+        playerHeader.addEventListener("mousedown", startDragPlayer);
+        minBtn.addEventListener("mousedown", startDragPlayer);
 
-        window.addEventListener("mousemove", onDrag);
-        window.addEventListener("mouseup", stopDrag);
+        window.addEventListener("mousemove", onDragPlayer);
+        window.addEventListener("mouseup", stopDragPlayer);
 
-        playerHeader.addEventListener("touchstart", startDrag, { passive: true });
-        minBtn.addEventListener("touchstart", startDrag, { passive: true });
+        playerHeader.addEventListener("touchstart", startDragPlayer, { passive: true });
+        minBtn.addEventListener("touchstart", startDragPlayer, { passive: true });
 
-        window.addEventListener("touchmove", onDrag, { passive: true });
-        window.addEventListener("touchend", stopDrag);
+        window.addEventListener("touchmove", onDragPlayer, { passive: true });
+        window.addEventListener("touchend", stopDragPlayer);
 
-        window.addEventListener("resize", clampPlayerPosition);
+        /* --- Dünya / Tuval Kaydırma ve Esnek Sınır (Elastic Clamping) Mantığı --- */
+        const world = document.getElementById("world");
+        const viewport = document.getElementById("viewport-container");
+        let worldX = 0;
+        let worldY = 0;
+        let isPanning = false;
+        let panStartX = 0;
+        let panStartY = 0;
+
+        function updateWorldTransform() {
+            // Sınır Koruması (Tuvalin ekran dışına kaçmasını ve kenar kesilmelerini engeller)
+            const minX = window.innerWidth - 3000;
+            const minY = window.innerHeight - 3000;
+            const maxX = 0;
+            const maxY = 0;
+
+            if (worldX > maxX) worldX = maxX;
+            if (worldY > maxY) worldY = maxY;
+            if (worldX < minX) worldX = minX;
+            if (worldY < minY) worldY = minY;
+
+            world.style.transform = `translate3d(${worldX}px, ${worldY}px, 0)`;
+        }
+
+        function centerView() {
+            worldX = (window.innerWidth / 2) - 1500;
+            worldY = (window.innerHeight / 2) - 1500;
+            updateWorldTransform();
+        }
+
+        function startPan(e) {
+            if (isDrawingMode) return;
+            if (e.target.closest('#music-player') || e.target.closest('#toolbar') || e.target.closest('.card')) return;
+
+            isPanning = true;
+            const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+            const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+
+            panStartX = clientX - worldX;
+            panStartY = clientY - worldY;
+            viewport.style.cursor = 'grabbing';
+        }
+
+        function onPan(e) {
+            if (!isPanning || isDrawingMode) return;
+
+            const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+            const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+
+            worldX = clientX - panStartX;
+            worldY = clientY - panStartY;
+            updateWorldTransform();
+        }
+
+        function stopPan() {
+            isPanning = false;
+            viewport.style.cursor = isDrawingMode ? 'default' : 'grab';
+        }
+
+        viewport.addEventListener('mousedown', startPan);
+        window.addEventListener('mousemove', onPan);
+        window.addEventListener('mouseup', stopPan);
+
+        viewport.addEventListener('touchstart', startPan, { passive: true });
+        window.addEventListener('touchmove', onPan, { passive: true });
+        window.addEventListener('touchend', stopPan);
 
         /* Tam Ekran Kontrolü */
         function toggleFullscreen() {
@@ -767,7 +850,7 @@
         function createHeart() {
             const heart = document.createElement("div");
             heart.classList.add("heart-particle");
-            heart.innerHTML = "❤️";
+            heart.innerHTML = "❤️️";
             heart.style.left = Math.random() * 100 + "vw";
             heart.style.animationDuration = Math.random() * 2 + 3 + "s";
             document.body.appendChild(heart);
@@ -775,50 +858,30 @@
             setTimeout(() => heart.remove(), 4000);
         }
 
-        /* DÜZELTİLMİŞ ÇİZİM VE GEZİNME MODU KONTROLÜ */
+        /* Çizim & Gezinme Modu Mantığı */
         const canvas = document.getElementById('drawCanvas');
         const ctx = canvas.getContext('2d');
         let drawing = false;
         let currentColor = '#ffb6c1';
         let currentGlow = '#ff69b4';
         let isEraser = false;
-        let isDrawingMode = true;
+        let isDrawingMode = false; // Başlangıçta gezinme modu
 
         function toggleInteractivity() {
             isDrawingMode = !isDrawingMode;
             const modeBtn = document.getElementById('modeBtn');
             if (isDrawingMode) {
-                canvas.classList.remove('disabled');
-                document.body.classList.remove('scrollable');
+                canvas.style.pointerEvents = 'auto';
+                viewport.style.cursor = 'default';
                 modeBtn.textContent = '✏️ Çizim Modu';
                 modeBtn.classList.add('active');
             } else {
-                canvas.classList.add('disabled');
-                document.body.classList.add('scrollable');
+                canvas.style.pointerEvents = 'none';
+                viewport.style.cursor = 'grab';
                 modeBtn.textContent = '🖐️ Gezinme Modu';
                 modeBtn.classList.remove('active');
             }
         }
-
-        function resizeCanvas() {
-            const tempCanvas = document.createElement('canvas');
-            const tempCtx = tempCanvas.getContext('2d');
-            tempCanvas.width = canvas.width;
-            tempCanvas.height = canvas.height;
-            if (canvas.width > 0 && canvas.height > 0) {
-                tempCtx.drawImage(canvas, 0, 0);
-            }
-
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-
-            ctx.drawImage(tempCanvas, 0, 0);
-            clampPlayerPosition();
-        }
-        window.addEventListener('resize', resizeCanvas);
-        
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
 
         function setColor(color, glow, element) {
             isEraser = false;
@@ -850,10 +913,13 @@
 
         function enableDrawing() {
             function getCoords(e) {
-                if (e.touches && e.touches.length > 0) {
-                    return { x: e.touches[0].clientX, y: e.touches[0].clientY };
-                }
-                return { x: e.clientX, y: e.clientY };
+                const rect = canvas.getBoundingClientRect();
+                const clientX = e.touches && e.touches.length > 0 ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches && e.touches.length > 0 ? e.touches[0].clientY : e.clientY;
+                return {
+                    x: clientX - rect.left,
+                    y: clientY - rect.top
+                };
             }
 
             function startDraw(e) {
@@ -917,9 +983,16 @@
         }
 
         window.onload = () => {
+            centerView();
             typeEffect();
             initPlaylist();
+            toggleInteractivity();
         };
+
+        window.addEventListener('resize', () => {
+            clampPlayerPosition();
+            updateWorldTransform();
+        });
     </script>
 </body>
 </html>
