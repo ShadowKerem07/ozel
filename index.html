@@ -20,8 +20,14 @@
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            overflow: hidden;
-            touch-action: none;
+            overflow-x: hidden;
+            overflow-y: auto;
+            touch-action: none; /* Varsayılan çizim için */
+        }
+
+        body.scrollable {
+            touch-action: auto !important; /* Gezinme modunda kaydırmaya izin ver */
+            overflow-y: auto !important;
         }
 
         /* Çizim Tuvali */
@@ -33,6 +39,11 @@
             height: 100vh;
             z-index: 1;
             cursor: crosshair;
+            pointer-events: auto;
+        }
+
+        #drawCanvas.disabled {
+            pointer-events: none !important; /* Gezinme modunda dokunmayı tamamen alt katmana geçirir */
         }
 
         /* Çizim Araç Çubuğu (Toolbar) */
@@ -351,7 +362,6 @@
             transform: scale(1.08);
         }
 
-        /* Düzeltilmiş Ferah Şarkı Listesi */
         .playlist {
             max-height: 180px;
             overflow-y: auto;
@@ -445,7 +455,7 @@
         <button class="tool-btn" id="eraserBtn" onclick="toggleEraser(this)">🧹 Silgi</button>
         <button class="tool-btn" onclick="clearCanvas()">🗑️ Temizle</button>
         <button class="tool-btn" id="fullscreenBtn" onclick="toggleFullscreen()">⛶ Tam Ekran</button>
-        <button class="tool-btn" id="modeBtn" onclick="toggleInteractivity()">✏️ Çizim Modu</button>
+        <button class="tool-btn active" id="modeBtn" onclick="toggleInteractivity()">✏️ Çizim Modu</button>
     </div>
 
     <audio id="bg-music" preload="auto"></audio>
@@ -765,7 +775,7 @@
             setTimeout(() => heart.remove(), 4000);
         }
 
-        /* Çizim & Gezinme Modu Mantığı */
+        /* DÜZELTİLMİŞ ÇİZİM VE GEZİNME MODU KONTROLÜ */
         const canvas = document.getElementById('drawCanvas');
         const ctx = canvas.getContext('2d');
         let drawing = false;
@@ -778,13 +788,13 @@
             isDrawingMode = !isDrawingMode;
             const modeBtn = document.getElementById('modeBtn');
             if (isDrawingMode) {
-                canvas.style.pointerEvents = 'auto';
-                document.body.style.touchAction = 'none';
+                canvas.classList.remove('disabled');
+                document.body.classList.remove('scrollable');
                 modeBtn.textContent = '✏️ Çizim Modu';
                 modeBtn.classList.add('active');
             } else {
-                canvas.style.pointerEvents = 'none';
-                document.body.style.touchAction = 'auto';
+                canvas.classList.add('disabled');
+                document.body.classList.add('scrollable');
                 modeBtn.textContent = '🖐️ Gezinme Modu';
                 modeBtn.classList.remove('active');
             }
@@ -891,9 +901,19 @@
             window.addEventListener('mouseup', stopDraw);
             canvas.addEventListener('mousemove', draw);
 
-            canvas.addEventListener('touchstart', (e) => { startDraw(e); }, { passive: true });
+            canvas.addEventListener('touchstart', (e) => { 
+                if (isDrawingMode) {
+                    startDraw(e); 
+                }
+            }, { passive: true });
+            
             window.addEventListener('touchend', stopDraw);
-            canvas.addEventListener('touchmove', (e) => { draw(e); }, { passive: true });
+            
+            canvas.addEventListener('touchmove', (e) => { 
+                if (isDrawingMode) {
+                    draw(e); 
+                }
+            }, { passive: true });
         }
 
         window.onload = () => {
