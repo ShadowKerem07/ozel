@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Naz İçin Özel ッ</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #0d0d11;
+            color: #fff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        #drawCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1;
+            cursor: crosshair;
+        }
+
+        /* Çizim Araç Çubuğu (Toolbar) */
+        #toolbar {
+            position: fixed;
+            bottom: 25px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            z-index: 20;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 182, 193, 0.3);
+            padding: 10px 20px;
+            border-radius: 30px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            opacity: 0;
+            transition: transform 1s ease, opacity 1s ease;
+            pointer-events: auto;
+        }
+
+        #toolbar.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        .color-btn {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            cursor: pointer;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+
+        .color-btn:hover, .color-btn.active {
+            transform: scale(1.25);
+            border-color: #fff;
+            box-shadow: 0 0 10px rgba(255,255,255,0.8);
+        }
+
+        .tool-btn {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: #fff;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tool-btn:hover, .tool-btn.active {
+            background: #ff69b4;
+            border-color: #ffb6c1;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.07);
+            border: 1px solid rgba(255, 182, 193, 0.3);
+            backdrop-filter: blur(15px);
+            padding: 35px;
+            border-radius: 20px;
+            text-align: center;
+            max-width: 480px;
+            width: 85%;
+            box-shadow: 0 0 35px rgba(255, 105, 180, 0.25);
+            z-index: 10;
+            transition: all 1s cubic-bezier(0.25, 1, 0.5, 1);
+            position: absolute;
+        }
+
+        .card.shift-up {
+            top: 25px;
+            padding: 15px 25px;
+            max-width: 420px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5), 0 0 15px rgba(255, 105, 180, 0.2);
+            pointer-events: none;
+        }
+
+        h1 {
+            color: #ffb6c1;
+            font-size: 2.2rem;
+            margin: 0 0 15px 0;
+            text-shadow: 0 0 10px rgba(255, 182, 193, 0.5);
+            transition: all 0.8s ease;
+        }
+
+        .card.shift-up h1 {
+            font-size: 1.4rem;
+            margin-bottom: 5px;
+        }
+
+        #typing-text {
+            font-size: 1.05rem;
+            line-height: 1.6;
+            color: #eaeaea;
+            min-height: 70px;
+            margin-bottom: 20px;
+            white-space: pre-wrap;
+            transition: all 0.8s ease;
+        }
+
+        .card.shift-up #typing-text {
+            font-size: 0.95rem;
+            line-height: 1.4;
+            min-height: auto;
+            margin-bottom: 0;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #ff69b4, #ffb6c1);
+            color: #fff;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            pointer-events: auto;
+        }
+
+        .btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px #ff69b4;
+        }
+
+        .heart-particle {
+            position: absolute;
+            color: #ff69b4;
+            font-size: 22px;
+            user-select: none;
+            pointer-events: none;
+            animation: floatUp 4s linear infinite;
+            z-index: 2;
+        }
+
+        @keyframes floatUp {
+            0% { transform: translateY(100vh) scale(0.5); opacity: 1; }
+            100% { transform: translateY(-10vh) scale(1.3); opacity: 0; }
+        }
+
+        /* --- Sürüklenebilir Müzik Çalar Stilleri --- */
+        #music-player {
+            position: fixed;
+            top: 25px;
+            right: 25px;
+            z-index: 30;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 182, 193, 0.3);
+            border-radius: 20px;
+            padding: 16px;
+            width: 280px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+            pointer-events: auto;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+            user-select: none;
+        }
+
+        #music-player.collapsed {
+            width: 44px;
+            height: 44px;
+            padding: 0;
+            border-radius: 50%;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: grab;
+        }
+
+        #music-player.collapsed:active {
+            cursor: grabbing;
+        }
+
+        #music-player.collapsed .player-content {
+            display: none;
+        }
+
+        .toggle-player-btn {
+            background: none;
+            border: none;
+            color: #ffb6c1;
+            font-size: 1.2rem;
+            cursor: pointer;
+            outline: none;
+            padding: 0;
+            line-height: 1;
+        }
+
+        .player-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+            padding-bottom: 8px;
+            cursor: grab;
+        }
+
+        .player-header:active {
+            cursor: grabbing;
+        }
+
+        .player-title {
+            font-size: 0.95rem;
+            font-weight: bold;
+            color: #ffb6c1;
+            pointer-events: none;
+        }
+
+        .current-track {
+            font-size: 0.9rem;
+            color: #fff;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 10px;
+            font-weight: 600;
+            text-align: center;
+            line-height: 1.4;
+        }
+
+        .progress-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .time-text {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.8);
+            font-variant-numeric: tabular-nums;
+            min-width: 30px;
+            text-align: center;
+            line-height: 1;
+        }
+
+        .progress-bar, .volume-bar {
+            flex: 1;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+            cursor: pointer;
+            position: relative;
+            outline: none;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        .progress-bar::-webkit-slider-thumb, .volume-bar::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #ff69b4;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        .progress-bar::-webkit-slider-thumb:hover, .volume-bar::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        .volume-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+            padding: 0 4px;
+        }
+
+        .volume-btn {
+            background: none;
+            border: none;
+            color: #ffb6c1;
+            font-size: 0.95rem;
+            cursor: pointer;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .player-controls {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .control-btn {
+            background: rgba(255, 255, 255, 0.15);
+            border: none;
+            color: #fff;
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.95rem;
+            transition: background 0.2s, transform 0.2s;
+        }
+
+        .control-btn:hover {
+            background: #ff69b4;
+            transform: scale(1.1);
+        }
+
+        .playlist {
+            max-height: 160px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            padding-right: 4px;
+            box-sizing: border-box;
+        }
+
+        .playlist::-webkit-scrollbar {
+            width: 5px;
+        }
+        .playlist::-webkit-scrollbar-thumb {
+            background: rgba(255, 182, 193, 0.5);
+            border-radius: 4px;
+        }
+
+        .playlist-item {
+            font-size: 0.85rem;
+            line-height: 1.5;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            color: rgba(255, 255, 255, 0.9);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            transition: all 0.2s ease;
+            box-sizing: border-box;
+            display: block;
+            min-height: 36px;
+            height: auto;
+        }
+
+        .playlist-item:hover {
+            background: rgba(255, 255, 255, 0.18);
+            color: #fff;
+        }
+
+        .playlist-item.active {
+            background: rgba(255, 105, 180, 0.35);
+            color: #ffb6c1;
+            font-weight: 600;
+            border-left: 3px solid #ff69b4;
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="drawCanvas"></canvas>
+
+    <!-- Müzik Çalar Widget -->
+    <div id="music-player">
+        <button class="toggle-player-btn" id="min-btn" onclick="handleMinBtnClick()" style="display: none;">🎵</button>
+        <div class="player-content">
+            <div class="player-header" id="player-header">
+                <span class="player-title">🎶 Müzik Çalar</span>
+                <button class="toggle-player-btn" onclick="togglePlayer()">➖</button>
+            </div>
+            <div class="current-track" id="current-track-name">Çalınmıyor</div>
+            
+            <!-- Süre Çubuğu -->
+            <div class="progress-container">
+                <span class="time-text" id="current-time">0:00</span>
+                <input type="range" class="progress-bar" id="seek-bar" value="0" min="0" max="100" oninput="seekAudio()">
+                <span class="time-text" id="total-duration">0:00</span>
+            </div>
+
+            <!-- Ses Kontrol Paneli -->
+            <div class="volume-container">
+                <button class="volume-btn" id="volume-icon" onclick="toggleMute()">🔊</button>
+                <input type="range" class="volume-bar" id="volume-bar" value="80" min="0" max="100" oninput="changeVolume()">
+            </div>
+
+            <div class="player-controls">
+                <button class="control-btn" onclick="prevTrack()">⏮️</button>
+                <button class="control-btn" id="play-pause-btn" onclick="togglePlayPause()">▶️</button>
+                <button class="control-btn" onclick="nextTrack()">⏭️</button>
+            </div>
+            <div class="playlist" id="playlist-container"></div>
+        </div>
+    </div>
+
+    <!-- Çizim Menüsü -->
+    <div id="toolbar">
+        <div class="color-btn active" style="background: #ffb6c1;" onclick="setColor('#ffb6c1', '#ff69b4', this)"></div>
+        <div class="color-btn" style="background: #e0b0ff;" onclick="setColor('#e0b0ff', '#da70d6', this)"></div>
+        <div class="color-btn" style="background: #87cefa;" onclick="setColor('#87cefa', '#00bfff', this)"></div>
+        <div class="color-btn" style="background: #fffaca;" onclick="setColor('#fffaca', '#ffd700', this)"></div>
+        <div class="color-btn" style="background: #ffffff;" onclick="setColor('#ffffff', '#ffffff', this)"></div>
+        <button class="tool-btn" id="eraserBtn" onclick="toggleEraser(this)">🧹 Silgi</button>
+        <button class="tool-btn" onclick="clearCanvas()">🗑️ Temizle</button>
+    </div>
+
+    <audio id="bg-music" preload="auto"></audio>
+
+    <div class="card" id="mainCard">
+        <h1>Naz ッ</h1>
+        <div id="typing-text"></div>
+        <button class="btn" id="start-btn" onclick="startSurprise()">Sürprizi Aç ❤️️</button>
+    </div>
+
+    <script>
+        const initialMessage = "Sana özel küçük bir sürpriz hazırlamak istedim... İyi ki varsın!";
+        const finalNote = "Hayatımda olduğun için kendimi çok şanslı hissediyorum. Bu küçük alan tamamen senin için tasarlandı... 💚";
+
+        let index = 0;
+        let isStarted = false;
+
+        /* Müzik Çalar Mantığı (YIN YANG en üstte) */
+        const songs = [
+            { name: "YIN YANG", src: "YIN YANG.mp3" },
+            { name: "chihiro", src: "chihiro.mp3" },
+            { name: "A Little Death", src: "A Little Death.mp3" },
+            { name: "Afraid", src: "Afraid.mp3" },
+            { name: "Amatör", src: "Amatör.mp3" },
+            { name: "Happier ThanEver", src: "Happier ThanEver.mp3" },
+            { name: "Ölürüm Daha İyi", src: "Ölürüm Daha İyi.mp3" }
+        ];
+
+        let currentSongIndex = 0;
+        let previousVolume = 0.8;
+        const audio = document.getElementById("bg-music");
+        const seekBar = document.getElementById("seek-bar");
+        const volumeBar = document.getElementById("volume-bar");
+        const volumeIcon = document.getElementById("volume-icon");
+        const currentTimeElem = document.getElementById("current-time");
+        const totalDurationElem = document.getElementById("total-duration");
+
+        audio.volume = 0.8;
+
+        function formatTime(seconds) {
+            if (isNaN(seconds)) return "0:00";
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+        }
+
+        function initPlaylist() {
+            const container = document.getElementById("playlist-container");
+            container.innerHTML = "";
+            songs.forEach((song, idx) => {
+                const item = document.createElement("div");
+                item.classList.add("playlist-item");
+                if(idx === currentSongIndex) item.classList.add("active");
+                item.textContent = song.name;
+                item.onclick = () => playSong(idx);
+                container.appendChild(item);
+            });
+            updateTrackInfo();
+        }
+
+        function updateTrackInfo() {
+            document.getElementById("current-track-name").textContent = songs[currentSongIndex].name;
+            const items = document.querySelectorAll(".playlist-item");
+            items.forEach((item, idx) => {
+                if(idx === currentSongIndex) item.classList.add("active");
+                else item.classList.remove("active");
+            });
+        }
+
+        function playSong(index) {
+            currentSongIndex = index;
+            audio.src = songs[currentSongIndex].src;
+            updateTrackInfo();
+            audio.play().then(() => {
+                document.getElementById("play-pause-btn").textContent = "⏸️";
+            }).catch(e => console.log("Oynatma hatası:", e));
+        }
+
+        function togglePlayPause() {
+            if (!audio.src || audio.src === "") {
+                audio.src = songs[currentSongIndex].src;
+            }
+            if (audio.paused) {
+                audio.play();
+                document.getElementById("play-pause-btn").textContent = "⏸️";
+            } else {
+                audio.pause();
+                document.getElementById("play-pause-btn").textContent = "▶️";
+            }
+        }
+
+        function nextTrack() {
+            currentSongIndex = (currentSongIndex + 1) % songs.length;
+            playSong(currentSongIndex);
+        }
+
+        function prevTrack() {
+            currentSongIndex = (currentSongIndex - 1 + songs.length) % songs.length;
+            playSong(currentSongIndex);
+        }
+
+        function changeVolume() {
+            audio.volume = volumeBar.value / 100;
+            if (audio.volume === 0) {
+                volumeIcon.textContent = "🔇";
+            } else if (audio.volume < 0.5) {
+                volumeIcon.textContent = "🔉";
+            } else {
+                volumeIcon.textContent = "🔊";
+            }
+        }
+
+        function toggleMute() {
+            if (audio.volume > 0) {
+                previousVolume = audio.volume;
+                audio.volume = 0;
+                volumeBar.value = 0;
+                volumeIcon.textContent = "🔇";
+            } else {
+                audio.volume = previousVolume || 0.8;
+                volumeBar.value = audio.volume * 100;
+                volumeIcon.textContent = audio.volume < 0.5 ? "🔉" : "🔊";
+            }
+        }
+
+        audio.addEventListener("timeupdate", () => {
+            if (!isNaN(audio.duration) && audio.duration > 0) {
+                const progress = (audio.currentTime / audio.duration) * 100;
+                seekBar.value = progress;
+                currentTimeElem.textContent = formatTime(audio.currentTime);
+                totalDurationElem.textContent = formatTime(audio.duration);
+            }
+        });
+
+        function seekAudio() {
+            if (!isNaN(audio.duration) && audio.duration > 0) {
+                const seekTo = (seekBar.value / 100) * audio.duration;
+                audio.currentTime = seekTo;
+            }
+        }
+
+        audio.addEventListener("ended", () => {
+            nextTrack();
+        });
+
+        function togglePlayer() {
+            const player = document.getElementById("music-player");
+            const minBtn = document.getElementById("min-btn");
+            player.classList.toggle("collapsed");
+            if (player.classList.contains("collapsed")) {
+                minBtn.style.display = "block";
+            } else {
+                minBtn.style.display = "none";
+            }
+        }
+
+        function handleMinBtnClick() {
+            if (!hasDragged) {
+                togglePlayer();
+            }
+        }
+
+        /* --- Sürükle & Bırak Mantığı --- */
+        const player = document.getElementById("music-player");
+        const playerHeader = document.getElementById("player-header");
+        const minBtn = document.getElementById("min-btn");
+        let isDragging = false;
+        let hasDragged = false;
+        let startX, startY, initialLeft, initialTop;
+
+        function startDrag(e) {
+            if (e.target.tagName === 'BUTTON' && !player.classList.contains('collapsed')) return;
+
+            isDragging = true;
+            hasDragged = false;
+
+            const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+            const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+
+            startX = clientX;
+            startY = clientY;
+
+            const rect = player.getBoundingClientRect();
+            initialLeft = rect.left;
+            initialTop = rect.top;
+
+            player.style.right = 'auto';
+            player.style.left = initialLeft + 'px';
+            player.style.top = initialTop + 'px';
+        }
+
+        function onDrag(e) {
+            if (!isDragging) return;
+
+            const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+            const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+
+            const dx = clientX - startX;
+            const dy = clientY - startY;
+
+            if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+                hasDragged = true;
+            }
+
+            player.style.left = (initialLeft + dx) + 'px';
+            player.style.top = (initialTop + dy) + 'px';
+        }
+
+        function stopDrag() {
+            isDragging = false;
+        }
+
+        playerHeader.addEventListener("mousedown", startDrag);
+        minBtn.addEventListener("mousedown", startDrag);
+
+        window.addEventListener("mousemove", onDrag);
+        window.addEventListener("mouseup", stopDrag);
+
+        playerHeader.addEventListener("touchstart", startDrag, { passive: true });
+        minBtn.addEventListener("touchstart", startDrag, { passive: true });
+
+        window.addEventListener("touchmove", onDrag, { passive: true });
+        window.addEventListener("touchend", stopDrag);
+
+        /* Başlangıç Yazı Efekti */
+        function typeEffect() {
+            if (index < initialMessage.length) {
+                document.getElementById("typing-text").textContent += initialMessage.charAt(index);
+                index++;
+                setTimeout(typeEffect, 50);
+            }
+        }
+
+        function startSurprise() {
+            if(isStarted) return;
+            isStarted = true;
+
+            playSong(0);
+
+            document.getElementById("start-btn").style.display = "none";
+            document.getElementById("typing-text").textContent = "";
+            
+            let nIndex = 0;
+            function typeNote() {
+                if (nIndex < finalNote.length) {
+                    document.getElementById("typing-text").textContent += finalNote.charAt(nIndex);
+                    nIndex++;
+                    setTimeout(typeNote, 40);
+                } else {
+                    setTimeout(() => {
+                        document.getElementById("mainCard").classList.add("shift-up");
+                        document.getElementById("toolbar").classList.add("show");
+                        enableDrawing();
+                    }, 600);
+                }
+            }
+            typeNote();
+
+            setInterval(createHeart, 300);
+        }
+
+        function createHeart() {
+            const heart = document.createElement("div");
+            heart.classList.add("heart-particle");
+            heart.innerHTML = "❤️";
+            heart.style.left = Math.random() * 100 + "vw";
+            heart.style.animationDuration = Math.random() * 2 + 3 + "s";
+            document.body.appendChild(heart);
+
+            setTimeout(() => heart.remove(), 4000);
+        }
+
+        /* Çizim & Araç Kontrolleri */
+        const canvas = document.getElementById('drawCanvas');
+        const ctx = canvas.getContext('2d');
+        let drawing = false;
+        let currentColor = '#ffb6c1';
+        let currentGlow = '#ff69b4';
+        let isEraser = false;
+
+        function resizeCanvas() {
+            const tempCanvas = document.createElement('canvas');
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCanvas.width = canvas.width;
+            tempCanvas.height = canvas.height;
+            if (canvas.width > 0 && canvas.height > 0) {
+                tempCtx.drawImage(canvas, 0, 0);
+            }
+
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            ctx.drawImage(tempCanvas, 0, 0);
+        }
+        window.addEventListener('resize', resizeCanvas);
+        
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        function setColor(color, glow, element) {
+            isEraser = false;
+            document.getElementById('eraserBtn').classList.remove('active');
+            currentColor = color;
+            currentGlow = glow;
+            document.querySelectorAll('.color-btn').forEach(btn => btn.classList.remove('active'));
+            element.classList.add('active');
+        }
+
+        function toggleEraser(element) {
+            isEraser = !isEraser;
+            if (isEraser) {
+                element.classList.add('active');
+                document.querySelectorAll('.color-btn').forEach(btn => btn.classList.remove('active'));
+            } else {
+                element.classList.remove('active');
+                const firstColorBtn = document.querySelector('.color-btn');
+                if (firstColorBtn) firstColorBtn.classList.add('active');
+            }
+        }
+
+        function clearCanvas() {
+            ctx.save();
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.restore();
+        }
+
+        function enableDrawing() {
+            function getCoords(e) {
+                if (e.touches && e.touches.length > 0) {
+                    return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+                }
+                return { x: e.clientX, y: e.clientY };
+            }
+
+            function startDraw(e) {
+                drawing = true;
+                const coords = getCoords(e);
+                ctx.beginPath();
+                ctx.moveTo(coords.x, coords.y);
+                draw(e);
+            }
+
+            function stopDraw() {
+                drawing = false;
+                ctx.beginPath();
+            }
+
+            function draw(e) {
+                if (!drawing) return;
+
+                const coords = getCoords(e);
+
+                if (isEraser) {
+                    ctx.globalCompositeOperation = 'destination-out';
+                    ctx.lineWidth = 30;
+                    ctx.lineCap = 'round';
+                    ctx.lineJoin = 'round';
+                    ctx.shadowBlur = 0;
+                } else {
+                    ctx.globalCompositeOperation = 'source-over';
+                    ctx.lineWidth = 4;
+                    ctx.lineCap = 'round';
+                    ctx.lineJoin = 'round';
+                    ctx.strokeStyle = currentColor;
+                    ctx.shadowBlur = 12;
+                    ctx.shadowColor = currentGlow;
+                }
+
+                ctx.lineTo(coords.x, coords.y);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(coords.x, coords.y);
+            }
+
+            canvas.addEventListener('mousedown', startDraw);
+            window.addEventListener('mouseup', stopDraw);
+            canvas.addEventListener('mousemove', draw);
+
+            canvas.addEventListener('touchstart', (e) => { startDraw(e); }, { passive: true });
+            window.addEventListener('touchend', stopDraw);
+            canvas.addEventListener('touchmove', (e) => { draw(e); }, { passive: true });
+        }
+
+        window.onload = () => {
+            typeEffect();
+            initPlaylist();
+        };
+    </script>
+</body>
+</html>
