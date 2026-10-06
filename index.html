@@ -2,9 +2,14 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Naz İçin Özel ッ</title>
     <style>
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
         body {
             margin: 0;
             padding: 0;
@@ -19,6 +24,7 @@
             touch-action: none;
         }
 
+        /* Çizim Tuvali */
         #drawCanvas {
             position: fixed;
             top: 0;
@@ -32,22 +38,25 @@
         /* Çizim Araç Çubuğu (Toolbar) */
         #toolbar {
             position: fixed;
-            bottom: 25px;
+            bottom: 20px;
             left: 50%;
-            transform: translateX(-50%) translateY(100px);
-            z-index: 20;
-            background: rgba(255, 255, 255, 0.1);
+            transform: translateX(-50%) translateY(120px);
+            z-index: 100;
+            background: rgba(255, 255, 255, 0.12);
             backdrop-filter: blur(15px);
-            border: 1px solid rgba(255, 182, 193, 0.3);
-            padding: 10px 20px;
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 182, 193, 0.35);
+            padding: 8px 16px;
             border-radius: 30px;
             display: flex;
-            gap: 12px;
+            gap: 8px;
             align-items: center;
             box-shadow: 0 10px 25px rgba(0,0,0,0.5);
             opacity: 0;
-            transition: transform 1s ease, opacity 1s ease;
+            transition: transform 0.8s ease, opacity 0.8s ease;
             pointer-events: auto;
+            max-width: 95vw;
+            overflow-x: auto;
         }
 
         #toolbar.show {
@@ -56,8 +65,9 @@
         }
 
         .color-btn {
-            width: 26px;
-            height: 26px;
+            width: 24px;
+            height: 24px;
+            flex-shrink: 0;
             border-radius: 50%;
             border: 2px solid rgba(255, 255, 255, 0.5);
             cursor: pointer;
@@ -65,20 +75,24 @@
         }
 
         .color-btn:hover, .color-btn.active {
-            transform: scale(1.25);
+            transform: scale(1.2);
             border-color: #fff;
             box-shadow: 0 0 10px rgba(255,255,255,0.8);
         }
 
         .tool-btn {
-            background: rgba(255, 255, 255, 0.15);
+            background: rgba(255, 255, 255, 0.18);
             border: 1px solid rgba(255, 255, 255, 0.3);
             color: #fff;
-            padding: 5px 12px;
-            border-radius: 15px;
-            font-size: 0.85rem;
+            padding: 6px 12px;
+            border-radius: 16px;
+            font-size: 0.8rem;
             cursor: pointer;
+            white-space: nowrap;
             transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 4px;
         }
 
         .tool-btn:hover, .tool-btn.active {
@@ -86,56 +100,56 @@
             border-color: #ffb6c1;
         }
 
+        /* Kart Stilleri */
         .card {
             background: rgba(255, 255, 255, 0.07);
             border: 1px solid rgba(255, 182, 193, 0.3);
             backdrop-filter: blur(15px);
-            padding: 35px;
+            -webkit-backdrop-filter: blur(15px);
+            padding: 30px 25px;
             border-radius: 20px;
             text-align: center;
-            max-width: 480px;
-            width: 85%;
+            max-width: 450px;
+            width: 88%;
             box-shadow: 0 0 35px rgba(255, 105, 180, 0.25);
             z-index: 10;
-            transition: all 1s cubic-bezier(0.25, 1, 0.5, 1);
+            transition: all 0.8s cubic-bezier(0.25, 1, 0.5, 1);
             position: absolute;
         }
 
         .card.shift-up {
-            top: 25px;
-            padding: 15px 25px;
-            max-width: 420px;
+            top: 15px;
+            padding: 12px 20px;
+            max-width: 380px;
             border-radius: 16px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5), 0 0 15px rgba(255, 105, 180, 0.2);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
             pointer-events: none;
         }
 
         h1 {
             color: #ffb6c1;
-            font-size: 2.2rem;
-            margin: 0 0 15px 0;
+            font-size: 2rem;
+            margin: 0 0 12px 0;
             text-shadow: 0 0 10px rgba(255, 182, 193, 0.5);
-            transition: all 0.8s ease;
         }
 
         .card.shift-up h1 {
-            font-size: 1.4rem;
-            margin-bottom: 5px;
+            font-size: 1.25rem;
+            margin-bottom: 4px;
         }
 
         #typing-text {
-            font-size: 1.05rem;
-            line-height: 1.6;
+            font-size: 1rem;
+            line-height: 1.5;
             color: #eaeaea;
-            min-height: 70px;
-            margin-bottom: 20px;
+            min-height: 60px;
+            margin-bottom: 15px;
             white-space: pre-wrap;
-            transition: all 0.8s ease;
         }
 
         .card.shift-up #typing-text {
-            font-size: 0.95rem;
-            line-height: 1.4;
+            font-size: 0.85rem;
+            line-height: 1.3;
             min-height: auto;
             margin-bottom: 0;
         }
@@ -144,8 +158,8 @@
             background: linear-gradient(45deg, #ff69b4, #ffb6c1);
             color: #fff;
             border: none;
-            padding: 12px 30px;
-            font-size: 1rem;
+            padding: 12px 28px;
+            font-size: 0.95rem;
             font-weight: bold;
             border-radius: 25px;
             cursor: pointer;
@@ -161,7 +175,7 @@
         .heart-particle {
             position: absolute;
             color: #ff69b4;
-            font-size: 22px;
+            font-size: 20px;
             user-select: none;
             pointer-events: none;
             animation: floatUp 4s linear infinite;
@@ -173,28 +187,28 @@
             100% { transform: translateY(-10vh) scale(1.3); opacity: 0; }
         }
 
-        /* --- Sürüklenebilir Müzik Çalar Stilleri --- */
+        /* --- Sürüklenebilir Güvenli Müzik Çalar --- */
         #music-player {
             position: fixed;
-            top: 25px;
-            right: 25px;
-            z-index: 30;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(15px);
-            border: 1px solid rgba(255, 182, 193, 0.3);
+            top: 20px;
+            right: 20px;
+            z-index: 200;
+            background: rgba(20, 20, 30, 0.85);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            border: 1px solid rgba(255, 182, 193, 0.4);
             border-radius: 20px;
             padding: 16px;
-            width: 280px;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+            width: 300px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
             pointer-events: auto;
-            box-sizing: border-box;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
             user-select: none;
+            touch-action: none;
         }
 
         #music-player.collapsed {
-            width: 44px;
-            height: 44px;
+            width: 48px;
+            height: 48px;
             padding: 0;
             border-radius: 50%;
             overflow: hidden;
@@ -218,18 +232,17 @@
             color: #ffb6c1;
             font-size: 1.2rem;
             cursor: pointer;
-            outline: none;
             padding: 0;
-            line-height: 1;
+            outline: none;
         }
 
         .player-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.15);
-            padding-bottom: 8px;
+            padding-bottom: 6px;
             cursor: grab;
         }
 
@@ -238,14 +251,14 @@
         }
 
         .player-title {
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             font-weight: bold;
             color: #ffb6c1;
             pointer-events: none;
         }
 
         .current-track {
-            font-size: 0.9rem;
+            font-size: 0.95rem;
             color: #fff;
             white-space: nowrap;
             overflow: hidden;
@@ -253,23 +266,22 @@
             margin-bottom: 10px;
             font-weight: 600;
             text-align: center;
-            line-height: 1.4;
+            line-height: 1.3;
         }
 
         .progress-container {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
             margin-bottom: 10px;
         }
 
         .time-text {
             font-size: 0.75rem;
             color: rgba(255, 255, 255, 0.8);
-            font-variant-numeric: tabular-nums;
-            min-width: 30px;
+            min-width: 32px;
             text-align: center;
-            line-height: 1;
+            font-variant-numeric: tabular-nums;
         }
 
         .progress-bar, .volume-bar {
@@ -277,11 +289,10 @@
             height: 4px;
             background: rgba(255, 255, 255, 0.2);
             border-radius: 2px;
-            cursor: pointer;
-            position: relative;
             outline: none;
             -webkit-appearance: none;
             appearance: none;
+            cursor: pointer;
         }
 
         .progress-bar::-webkit-slider-thumb, .volume-bar::-webkit-slider-thumb {
@@ -292,36 +303,30 @@
             border-radius: 50%;
             background: #ff69b4;
             cursor: pointer;
-            transition: transform 0.1s;
-        }
-
-        .progress-bar::-webkit-slider-thumb:hover, .volume-bar::-webkit-slider-thumb:hover {
-            transform: scale(1.2);
         }
 
         .volume-container {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
             margin-bottom: 12px;
-            padding: 0 4px;
         }
 
         .volume-btn {
             background: none;
             border: none;
             color: #ffb6c1;
-            font-size: 0.95rem;
+            font-size: 1rem;
             cursor: pointer;
             padding: 0;
             display: flex;
             align-items: center;
-            justify-content: center;
         }
 
         .player-controls {
             display: flex;
             justify-content: center;
+            align-items: center;
             gap: 12px;
             margin-bottom: 14px;
         }
@@ -331,8 +336,8 @@
             border: none;
             color: #fff;
             border-radius: 50%;
-            width: 36px;
-            height: 36px;
+            width: 38px;
+            height: 38px;
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -343,21 +348,21 @@
 
         .control-btn:hover {
             background: #ff69b4;
-            transform: scale(1.1);
+            transform: scale(1.08);
         }
 
+        /* Düzeltilmiş Ferah Şarkı Listesi */
         .playlist {
-            max-height: 160px;
+            max-height: 180px;
             overflow-y: auto;
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            gap: 6px;
             padding-right: 4px;
-            box-sizing: border-box;
         }
 
         .playlist::-webkit-scrollbar {
-            width: 5px;
+            width: 4px;
         }
         .playlist::-webkit-scrollbar-thumb {
             background: rgba(255, 182, 193, 0.5);
@@ -365,20 +370,22 @@
         }
 
         .playlist-item {
-            font-size: 0.85rem;
-            line-height: 1.5;
-            padding: 8px 12px;
+            font-size: 0.85rem !important;
+            line-height: 1.5 !important;
+            min-height: 38px !important;
+            height: 38px !important;
+            padding: 0 12px !important;
             border-radius: 8px;
             cursor: pointer;
-            color: rgba(255, 255, 255, 0.9);
+            color: rgba(255, 255, 255, 0.88);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            transition: all 0.2s ease;
-            box-sizing: border-box;
-            display: block;
-            min-height: 36px;
-            height: auto;
+            display: flex !important;
+            align-items: center !important;
+            box-sizing: border-box !important;
+            background: rgba(255, 255, 255, 0.05);
+            transition: all 0.2s;
         }
 
         .playlist-item:hover {
@@ -387,7 +394,7 @@
         }
 
         .playlist-item.active {
-            background: rgba(255, 105, 180, 0.35);
+            background: rgba(255, 105, 180, 0.4);
             color: #ffb6c1;
             font-weight: 600;
             border-left: 3px solid #ff69b4;
@@ -408,23 +415,21 @@
             </div>
             <div class="current-track" id="current-track-name">Çalınmıyor</div>
             
-            <!-- Süre Çubuğu -->
             <div class="progress-container">
                 <span class="time-text" id="current-time">0:00</span>
                 <input type="range" class="progress-bar" id="seek-bar" value="0" min="0" max="100" oninput="seekAudio()">
                 <span class="time-text" id="total-duration">0:00</span>
             </div>
 
-            <!-- Ses Kontrol Paneli -->
             <div class="volume-container">
                 <button class="volume-btn" id="volume-icon" onclick="toggleMute()">🔊</button>
                 <input type="range" class="volume-bar" id="volume-bar" value="80" min="0" max="100" oninput="changeVolume()">
             </div>
 
             <div class="player-controls">
-                <button class="control-btn" onclick="prevTrack()">⏮️</button>
-                <button class="control-btn" id="play-pause-btn" onclick="togglePlayPause()">▶️</button>
-                <button class="control-btn" onclick="nextTrack()">⏭️</button>
+                <button class="control-btn" onclick="prevTrack()">⏮</button>
+                <button class="control-btn" id="play-pause-btn" onclick="togglePlayPause()">▶</button>
+                <button class="control-btn" onclick="nextTrack()">⏭</button>
             </div>
             <div class="playlist" id="playlist-container"></div>
         </div>
@@ -439,6 +444,8 @@
         <div class="color-btn" style="background: #ffffff;" onclick="setColor('#ffffff', '#ffffff', this)"></div>
         <button class="tool-btn" id="eraserBtn" onclick="toggleEraser(this)">🧹 Silgi</button>
         <button class="tool-btn" onclick="clearCanvas()">🗑️ Temizle</button>
+        <button class="tool-btn" id="fullscreenBtn" onclick="toggleFullscreen()">⛶ Tam Ekran</button>
+        <button class="tool-btn" id="modeBtn" onclick="toggleInteractivity()">✏️ Çizim Modu</button>
     </div>
 
     <audio id="bg-music" preload="auto"></audio>
@@ -446,7 +453,7 @@
     <div class="card" id="mainCard">
         <h1>Naz ッ</h1>
         <div id="typing-text"></div>
-        <button class="btn" id="start-btn" onclick="startSurprise()">Sürprizi Aç ❤️️</button>
+        <button class="btn" id="start-btn" onclick="startSurprise()">Sürprizi Aç ❤️</button>
     </div>
 
     <script>
@@ -456,7 +463,6 @@
         let index = 0;
         let isStarted = false;
 
-        /* Müzik Çalar Mantığı (YIN YANG en üstte) */
         const songs = [
             { name: "YIN YANG", src: "YIN YANG.mp3" },
             { name: "chihiro", src: "chihiro.mp3" },
@@ -513,7 +519,7 @@
             audio.src = songs[currentSongIndex].src;
             updateTrackInfo();
             audio.play().then(() => {
-                document.getElementById("play-pause-btn").textContent = "⏸️";
+                document.getElementById("play-pause-btn").textContent = "❚❚";
             }).catch(e => console.log("Oynatma hatası:", e));
         }
 
@@ -523,10 +529,10 @@
             }
             if (audio.paused) {
                 audio.play();
-                document.getElementById("play-pause-btn").textContent = "⏸️";
+                document.getElementById("play-pause-btn").textContent = "❚❚";
             } else {
                 audio.pause();
-                document.getElementById("play-pause-btn").textContent = "▶️";
+                document.getElementById("play-pause-btn").textContent = "▶";
             }
         }
 
@@ -593,6 +599,7 @@
             } else {
                 minBtn.style.display = "none";
             }
+            clampPlayerPosition();
         }
 
         function handleMinBtnClick() {
@@ -601,13 +608,31 @@
             }
         }
 
-        /* --- Sürükle & Bırak Mantığı --- */
+        /* --- Sınır Korumalı Sürükleme Mantığı --- */
         const player = document.getElementById("music-player");
         const playerHeader = document.getElementById("player-header");
         const minBtn = document.getElementById("min-btn");
         let isDragging = false;
         let hasDragged = false;
         let startX, startY, initialLeft, initialTop;
+
+        function clampPlayerPosition() {
+            const rect = player.getBoundingClientRect();
+            const winWidth = window.innerWidth;
+            const winHeight = window.innerHeight;
+
+            let left = rect.left;
+            let top = rect.top;
+
+            if (left < 10) left = 10;
+            if (top < 10) top = 10;
+            if (left + rect.width > winWidth - 10) left = winWidth - rect.width - 10;
+            if (top + rect.height > winHeight - 10) top = winHeight - rect.height - 10;
+
+            player.style.right = 'auto';
+            player.style.left = left + 'px';
+            player.style.top = top + 'px';
+        }
 
         function startDrag(e) {
             if (e.target.tagName === 'BUTTON' && !player.classList.contains('collapsed')) return;
@@ -643,12 +668,18 @@
                 hasDragged = true;
             }
 
-            player.style.left = (initialLeft + dx) + 'px';
-            player.style.top = (initialTop + dy) + 'px';
+            let newLeft = initialLeft + dx;
+            let newTop = initialTop + dy;
+
+            player.style.left = newLeft + 'px';
+            player.style.top = newTop + 'px';
         }
 
         function stopDrag() {
-            isDragging = false;
+            if (isDragging) {
+                isDragging = false;
+                clampPlayerPosition();
+            }
         }
 
         playerHeader.addEventListener("mousedown", startDrag);
@@ -662,6 +693,29 @@
 
         window.addEventListener("touchmove", onDrag, { passive: true });
         window.addEventListener("touchend", stopDrag);
+
+        window.addEventListener("resize", clampPlayerPosition);
+
+        /* Tam Ekran Kontrolü */
+        function toggleFullscreen() {
+            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+                const docEl = document.documentElement;
+                if (docEl.requestFullscreen) {
+                    docEl.requestFullscreen();
+                } else if (docEl.webkitRequestFullscreen) {
+                    docEl.webkitRequestFullscreen();
+                }
+                document.getElementById('fullscreenBtn').textContent = "⛶ Çıkış";
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                }
+                document.getElementById('fullscreenBtn').textContent = "⛶ Tam Ekran";
+            }
+            setTimeout(clampPlayerPosition, 300);
+        }
 
         /* Başlangıç Yazı Efekti */
         function typeEffect() {
@@ -711,13 +765,30 @@
             setTimeout(() => heart.remove(), 4000);
         }
 
-        /* Çizim & Araç Kontrolleri */
+        /* Çizim & Gezinme Modu Mantığı */
         const canvas = document.getElementById('drawCanvas');
         const ctx = canvas.getContext('2d');
         let drawing = false;
         let currentColor = '#ffb6c1';
         let currentGlow = '#ff69b4';
         let isEraser = false;
+        let isDrawingMode = true;
+
+        function toggleInteractivity() {
+            isDrawingMode = !isDrawingMode;
+            const modeBtn = document.getElementById('modeBtn');
+            if (isDrawingMode) {
+                canvas.style.pointerEvents = 'auto';
+                document.body.style.touchAction = 'none';
+                modeBtn.textContent = '✏️ Çizim Modu';
+                modeBtn.classList.add('active');
+            } else {
+                canvas.style.pointerEvents = 'none';
+                document.body.style.touchAction = 'auto';
+                modeBtn.textContent = '🖐️ Gezinme Modu';
+                modeBtn.classList.remove('active');
+            }
+        }
 
         function resizeCanvas() {
             const tempCanvas = document.createElement('canvas');
@@ -732,6 +803,7 @@
             canvas.height = window.innerHeight;
 
             ctx.drawImage(tempCanvas, 0, 0);
+            clampPlayerPosition();
         }
         window.addEventListener('resize', resizeCanvas);
         
@@ -775,6 +847,7 @@
             }
 
             function startDraw(e) {
+                if (!isDrawingMode) return;
                 drawing = true;
                 const coords = getCoords(e);
                 ctx.beginPath();
@@ -788,7 +861,7 @@
             }
 
             function draw(e) {
-                if (!drawing) return;
+                if (!drawing || !isDrawingMode) return;
 
                 const coords = getCoords(e);
 
